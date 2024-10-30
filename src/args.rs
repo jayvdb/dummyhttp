@@ -6,12 +6,27 @@ use std::net::IpAddr;
 #[cfg(feature = "tls")]
 use std::path::PathBuf;
 
+#[derive(clap::ValueEnum, Clone, Debug, PartialEq)]
+pub enum PrintOption {
+    #[clap(name = "B")]
+    RequestBody,
+    #[clap(name = "H")]
+    RequestHeaders,
+    #[clap(name = "b")]
+    ResponseBody,
+    #[clap(name = "h")]
+    ResponseHeaders,
+}
+
 #[derive(Debug, Clone, Parser)]
 #[command(name = "dummyhttp", author, about, version)]
 pub struct Args {
     /// Be quiet (log nothing)
     #[arg(short, long)]
     pub quiet: bool,
+
+    #[arg(long, value_delimiter = ',', num_args = 1..)]
+    pub print: Vec<PrintOption>,
 
     /// Be verbose (log data of incoming and outgoing requests). If given twice it will also log
     /// the body data.

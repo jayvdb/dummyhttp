@@ -24,7 +24,7 @@ use hyper::{header::CONTENT_TYPE, HeaderMap};
 use inflector::Inflector;
 use tokio::time::{sleep, Duration};
 
-use crate::args::Args;
+use crate::args::{Args, PrintOption};
 
 mod args;
 
@@ -215,6 +215,57 @@ async fn print_request_response(
             resp_banner = "┌─Outgoing response".red().bold(),
             resp_info = resp_info,
         );
+    } else if !args.print.is_empty() {
+        let mut incoming_headers_vec = vec![];
+        for (hk, hv) in &req_headers {
+            incoming_headers_vec.push(format!(
+                "{key}: {value}",
+                key = Inflector::to_train_case(hk.as_str()).cyan(),
+                value = hv.to_str().unwrap_or("<unprintable>")
+            ));
+        }
+        incoming_headers_vec.sort();
+        if !incoming_headers_vec.is_empty() {
+            incoming_headers_vec.insert(0, "".to_string());
+        }
+        let request_headers_text = incoming_headers_vec.join("\n");
+
+        let request_body_text = String::from_utf8_lossy(&bytes2);
+
+        let mut outgoing_headers_vec = vec![];
+        for (hk, hv) in resp.headers() {
+            outgoing_headers_vec.push(format!(
+                "{key}: {value}",
+                key = Inflector::to_train_case(hk.as_str()).cyan(),
+                value = hv.to_str().unwrap_or("<unprintable>")
+            ));
+        }
+        if !outgoing_headers_vec.is_empty() {
+            outgoing_headers_vec.insert(0, "".to_string());
+        }
+        outgoing_headers_vec.sort();
+        let response_headers_text = outgoing_headers_vec.join("\n");
+
+        let response_body_text =
+            if args.print.contains(&PrintOption::ResponseBody) && !args.body.is_empty() {
+                args.body
+            } else {
+                "".to_string()
+            };
+
+        if args.print.contains(&PrintOption::RequestHeaders) {
+            println!("{request_headers_text}");
+        }
+        if args.print.contains(&PrintOption::RequestBody) {
+            println!("{request_body_text}");
+        }
+
+        if args.print.contains(&PrintOption::ResponseHeaders) {
+            println!("{response_headers_text}");
+        }
+        if args.print.contains(&PrintOption::ResponseBody) {
+            println!("{response_body_text}");
+        }
     } else if !args.quiet {
         println!("{connect_line}",);
     }
